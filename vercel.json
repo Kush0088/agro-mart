@@ -26,6 +26,18 @@
     {
       "source": "/api/(.*)",
       "destination": "/server.js"
+    },
+    {
+      "source": "/login",
+      "destination": "/server.js"
+    },
+    {
+      "source": "/aghera-adminss",
+      "destination": "/server.js"
+    },
+    {
+      "source": "/health",
+      "destination": "/server.js"
     }
   ],
   "headers": [
