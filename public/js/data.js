@@ -1,3 +1,4 @@
+require('dotenv').config();
 /* ============================================
    AGROMART - DATA FILE
    Fetches data from backend API (Google Sheets)
@@ -81,17 +82,32 @@ async function initData() {
     _dataLoadPromise = (async () => {
         try {
             const response = await fetch(API_BASE + '/data');
-            if (!response.ok) throw new Error('API error');
+            
+            // Check Content-Type header to ensure it's JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.warn('API returned non-JSON response. Content-Type:', contentType);
+                console.warn('API returned HTML instead of JSON. This usually means:');
+                console.warn('1. Google Sheets is not configured on the server');
+                console.warn('2. The API endpoint returned an error page');
+                console.warn('3. CORS or authentication issues');
+                throw new Error('API returned invalid response format (expected JSON)');
+            }
+            
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
+            
             let data = await response.json();
 
-            // Only use API data if it has products (sheet might be empty)
-            if (data.products && data.products.length > 0) {
+            // If API returns fallback/empty data, use local cache
+            if (!data.products || data.products.length === 0) {
+                console.warn('API returned no products. Using cached data instead.');
+                _cachedData = getLocalData();
+            } else {
                 // Sanitize image URLs to remove corrupted patterns
                 data = sanitizeDataUrls(data);
                 _cachedData = data;
-            } else {
-                // Use localStorage fallback or defaults
-                _cachedData = getLocalData();
             }
 
             _dataLoaded = true;
@@ -99,6 +115,10 @@ async function initData() {
             saveLocalData(_cachedData);
         } catch (err) {
             console.warn('API not available, using local data:', err.message);
+            console.log('📝 Tip: Make sure Google Sheets API is configured in your server with these env vars:');
+            console.log('   - GOOGLE_SERVICE_ACCOUNT_EMAIL');
+            console.log('   - GOOGLE_PRIVATE_KEY');
+            console.log('   - GOOGLE_SHEET_ID');
             _cachedData = getLocalData();
             _dataLoaded = true;
         }

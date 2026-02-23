@@ -47,14 +47,52 @@ function requireAdmin(req, res, next) {
 
 // ===== DATA ENDPOINTS =====
 
+// GET /api/status - Server status and configuration check (for debugging)
+router.get('/status', (req, res) => {
+    const config = sheetsService.getConfig();
+    res.json({
+        status: 'ok',
+        environment: process.env.NODE_ENV || 'development',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        sheetsConfig: {
+            hasSheetId: !!config.sheetId,
+            hasEmail: !!config.serviceAccountEmail,
+            hasKey: !!process.env.GOOGLE_PRIVATE_KEY,
+            isConnected: config.isConnected
+        },
+        server: {
+            PORT: process.env.PORT || 3000,
+            hasAdminPassword: !!process.env.ADMIN_PASSWORD,
+            hasJWTSecret: !!process.env.JWT_SECRET
+        }
+    });
+});
+
 // GET /api/data - Fetch all data (public, cached)
 router.get('/data', async (req, res) => {
     try {
         const data = await sheetsService.getAllData();
+        if (!data || Object.keys(data).length === 0) {
+            console.warn('GET /api/data: Empty data returned from sheets service');
+            return res.status(200).json({ 
+                success: true,
+                source: 'default',
+                message: 'Using default data - Google Sheets may not be configured',
+                products: [],
+                categories: [],
+                settings: {}
+            });
+        }
         res.json(data);
     } catch (err) {
         console.error('GET /api/data error:', err.message);
-        res.status(500).json({ error: 'Failed to fetch data' });
+        console.error('Error stack:', err.stack);
+        res.status(500).json({ 
+            error: 'Failed to fetch data',
+            source: 'fallback',
+            message: process.env.NODE_ENV !== 'production' ? err.message : 'Server error'
+        });
     }
 });
 

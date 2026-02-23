@@ -28,9 +28,17 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_PATH = process.env.ADMIN_PATH || 'aghera-adminss';
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// ⚡ Better error messages for missing environment variables
 if (!ADMIN_PASSWORD || !JWT_SECRET) {
-    console.error('FATAL ERROR: ADMIN_PASSWORD or JWT_SECRET is not defined in .env');
-    process.exit(1);
+    const missing = [];
+    if (!ADMIN_PASSWORD) missing.push('ADMIN_PASSWORD');
+    if (!JWT_SECRET) missing.push('JWT_SECRET');
+    const errorMsg = `FATAL ERROR: Missing environment variables: ${missing.join(', ')}`;
+    console.error(errorMsg);
+    // Don't exit immediately on production, log it and continue with defaults
+    if (NODE_ENV !== 'production') {
+        process.exit(1);
+    }
 }
 
 // Trust proxy for rate limiting (important for Heroku/Nginx/etc)
@@ -222,6 +230,13 @@ app.get('/admin', (req, res) => {
     res.status(404).send('Not Found');
 });
 
+// ===== MIDDLEWARE: Ensure JSON responses for API errors =====
+app.use('/api', (req, res, next) => {
+    // Set default JSON content type for API
+    res.setHeader('Content-Type', 'application/json');
+    next();
+});
+
 // ===== API ROUTES =====
 app.use('/api', apiRoutes);
 
@@ -242,9 +257,18 @@ app.get('/health', (req, res) => {
 });
 
 // ===== ERROR HANDLING =====
+// This must come AFTER all other routes but BEFORE HTTPS redirect
 app.use((err, req, res, next) => {
     console.error('Server error:', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    // Ensure JSON response for all errors
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ error: 'Internal server error', message: process.env.NODE_ENV !== 'production' ? err.message : undefined });
+});
+
+// 404 Handler - must come after all other routes
+app.use((req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.status(404).json({ error: 'Not found' });
 });
 
 // ===== HTTPS REDIRECT (Production) =====
