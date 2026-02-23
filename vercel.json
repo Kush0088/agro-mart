@@ -22,40 +22,6 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.js",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    },
-    {
-      "src": "/health",
-      "dest": "server.js",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/login",
-      "dest": "server.js",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/aghera-adminss",
-      "dest": "server.js",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/_next(.*)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "$1"
-    },
-    {
-      "src": "/",
-      "dest": "server.js"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -104,5 +70,7 @@
     "NODE_ENV": "production",
     "PORT": "3000"
   },
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ]
 }
