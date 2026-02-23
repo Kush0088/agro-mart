@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroMart - Admin Panel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="admin-body">
+
+    <!-- ADMIN HEADER -->
+    <header class="admin-header">
+        <h1><i class="fas fa-cog"></i> Admin Panel</h1>
+        <a href="products.html" class="back-to-site">
+            <i class="fas fa-external-link-alt"></i> View Site
+        </a>
+    </header>
+
+    <!-- ADMIN CONTENT -->
+    <main class="admin-content">
+
+        <!-- Banner Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-image"></i> Banner Management</h2>
+            <div class="form-group">
+                <label for="bannerUrl">Banner Image URL:</label>
+                <input type="text" id="bannerUrl" placeholder="Enter banner image URL">
+                <button class="btn-save" id="saveBannerBtn">
+                    <i class="fas fa-save"></i> Save Banner
+                </button>
+            </div>
+            <div class="preview-box">
+                <p>Current Banner:</p>
+                <img id="bannerPreview" src="" alt="Banner Preview">
+            </div>
+        </section>
+
+        <!-- Hero Banner Image Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-panorama"></i> Hero Banner Image (Home Page)</h2>
+            <div class="form-group">
+                <label for="heroBannerUrl">Full-Width Hero Banner Image URL:</label>
+                <input type="text" id="heroBannerUrl" placeholder="Enter hero banner image URL">
+                <p class="help-text">This image will be displayed as the full-width banner on the home page. Recommended
+                    size: 1920x600px</p>
+                <button class="btn-save" id="saveHeroBannerBtn">
+                    <i class="fas fa-save"></i> Save Hero Banner
+                </button>
+            </div>
+            <div class="preview-box">
+                <p>Current Hero Banner:</p>
+                <img id="heroBannerPreview" src="" alt="Hero Banner Preview">
+            </div>
+        </section>
+
+        <!-- About Us Image Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-info-circle"></i> About Us Image</h2>
+            <div class="form-group">
+                <label for="aboutImageUrl">About Us Section Image URL:</label>
+                <input type="text" id="aboutImageUrl" placeholder="Enter about us image URL">
+                <p class="help-text">This image will appear in the About Us section on the home page. Recommended size:
+                    600x400px</p>
+                <button class="btn-save" id="saveAboutImageBtn">
+                    <i class="fas fa-save"></i> Save About Image
+                </button>
+            </div>
+            <div class="preview-box">
+                <p>Current About Image:</p>
+                <img id="aboutImagePreview" src="" alt="About Image Preview">
+            </div>
+        </section>
+
+        <!-- Category Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-folder"></i> Category Management</h2>
+            <div class="form-group">
+                <label for="newCategory">Add New Category:</label>
+                <div class="input-with-btn">
+                    <input type="text" id="newCategory" placeholder="Enter category name">
+                    <button class="btn-add" id="addCategoryBtn">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+            <div class="category-list-admin" id="adminCategoryList"></div>
+        </section>
+
+        <!-- Product Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-box"></i> Product Management</h2>
+
+            <div class="product-form" id="productForm">
+                <h3 id="formTitle">Add New Product</h3>
+                <input type="hidden" id="productId">
+
+                <div class="form-group">
+                    <label for="productName">Product Name: *</label>
+                    <input type="text" id="productName" placeholder="Enter product name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="productImage">Product Image URL: *</label>
+                    <input type="text" id="productImage" placeholder="Enter image URL" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="productCategory">Category: *</label>
+                    <select id="productCategory" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Product Variants:</label>
+                    <div id="variantsList" class="variants-list-admin">
+                        <!-- Dynamic rows here -->
+                    </div>
+                    <button type="button" class="btn-add-sm" id="addVariantBtn">
+                        <i class="fas fa-plus"></i> Add Variant
+                    </button>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="rating">Rating (1-5): *</label>
+                    <input type="number" id="rating" min="1" max="5" step="0.1" placeholder="4.5" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reviewCount">Number of Reviews:</label>
+                    <input type="number" id="reviewCount" placeholder="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" rows="4" placeholder="Enter product description..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="productImages">Additional Images (One URL per line):</label>
+                    <textarea id="productImages" rows="4"
+                        placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="technicalDetails">Technical Details (Format: Key:Value - One per line):</label>
+                    <textarea id="technicalDetails" rows="4" placeholder="Brand:AgroBrand&#10;Origin:India"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="bestSelling">
+                        Mark as Best Selling
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="bulkOrderNumber">Bulk Order Number:</label>
+                    <input type="text" id="bulkOrderNumber" placeholder="919316424006">
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-save" id="saveProductBtn">
+                        <i class="fas fa-save"></i> Save Product
+                    </button>
+                    <button class="btn-cancel" id="cancelEditBtn" style="display: none;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+
+            <div class="product-list-admin">
+                <div class="product-list-header-admin">
+                    <h3>All Products</h3>
+                    <div class="search-box-admin">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="adminProductSearch" placeholder="Search products, categories, info...">
+                    </div>
+                </div>
+                <div class="admin-products-grid" id="adminProductsList"></div>
+            </div>
+        </section>
+
+        <!-- Contact Settings -->
+        <section class="admin-section">
+            <h2><i class="fas fa-address-book"></i> Contact Settings</h2>
+
+            <div class="form-group">
+                <label for="whatsappNumber">Business WhatsApp Number:</label>
+                <input type="text" id="whatsappNumber" placeholder="919316424006">
+                <p class="help-text">Enter number with country code, without + or spaces. Example: 919316424006</p>
+            </div>
+
+            <div class="form-group">
+                <label for="contactEmail">Contact Email:</label>
+                <input type="email" id="contactEmail" placeholder="info@agromart.com">
+            </div>
+
+            <div class="form-group">
+                <label for="contactAddress">Physical Address:</label>
+                <textarea id="contactAddress" rows="3" placeholder="123 Farm Road, Agricultural District"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Social Media Links:</label>
+                <div class="social-inputs">
+                    <input type="text" id="facebookLink" placeholder="Facebook URL">
+                    <input type="text" id="instagramLink" placeholder="Instagram URL">
+                    <input type="text" id="twitterLink" placeholder="Twitter URL">
+                    <input type="text" id="linkedinLink" placeholder="LinkedIn URL">
+                </div>
+            </div>
+
+            <button class="btn-save" id="saveContactBtn">
+                <i class="fas fa-save"></i> Save Contact Settings
+            </button>
+        </section>
+
+        <!-- Data Management -->
+        <section class="admin-section">
+            <h2><i class="fas fa-database"></i> Data Management</h2>
+            <div class="data-actions">
+                <button class="btn-export" id="exportDataBtn">
+                    <i class="fas fa-download"></i> Download All Data
+                </button>
+                <button class="btn-import" id="importDataBtn">
+                    <i class="fas fa-upload"></i> Import Data
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+                <button class="btn-save" id="seedDataBtn">
+                    <i class="fas fa-cloud-upload-alt"></i> Push Data to Sheets
+                </button>
+                <button class="btn-reset" id="resetDataBtn">
+                    <i class="fas fa-undo"></i> Reset to Default
+                </button>
+            </div>
+            <p class="help-text">Download exports ALL data (products, categories, contacts, settings). Push Data syncs
+                local data to Google Sheets. Reset returns to default products.
+            </p>
+        </section>
+
+    </main>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script src="js/data.js"></script>
+    <script src="js/global.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>
