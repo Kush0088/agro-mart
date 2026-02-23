@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "public": true,
+  "env": {
+    "NODE_ENV": "production",
+    "GOOGLE_SERVICE_ACCOUNT_EMAIL": "@google-service-account-email",
+    "GOOGLE_PRIVATE_KEY": "@google-private-key",
+    "GOOGLE_SHEET_ID": "@google-sheet-id",
+    "ADMIN_PASSWORD": "@admin-password",
+    "JWT_SECRET": "@jwt-secret",
+    "CORS_ORIGIN": "@cors-origin"
+  }
+}
+

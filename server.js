@@ -30,8 +30,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!ADMIN_PASSWORD || !JWT_SECRET) {
     console.error('FATAL ERROR: ADMIN_PASSWORD or JWT_SECRET is not defined in .env');
-    process.exit(1);
-}
+        process.exit(1);
+    }
 
 // Trust proxy for rate limiting (important for Heroku/Nginx/etc)
 if (NODE_ENV === 'production') {
