@@ -187,6 +187,10 @@ function initEvents() {
 
     const orderBtn = document.getElementById('orderWhatsAppBtn');
     if (orderBtn) orderBtn.addEventListener('click', handleWhatsAppOrder);
+
+    // Need Help Floating Button
+    const floatWA = document.getElementById('whatsappFloat');
+    if (floatWA) floatWA.addEventListener('click', handleNeedHelpChat);
 }
 
 // Side Menu Functions
@@ -953,6 +957,31 @@ async function handleWhatsAppOrder() {
     // Open WhatsApp
     const number = getWhatsAppNumber();
     const url = `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+}
+
+/**
+ * Handles the "Need Help? Chat with us" floating button click.
+ * Implements a 1-minute cooldown AND a 5-per-hour limit.
+ */
+function handleNeedHelpChat(e) {
+    e.preventDefault();
+
+    const limit = checkActionLimit('chat', 60, 5, 3600);
+
+    if (!limit.allowed) {
+        if (limit.errorType === 'cooldown') {
+            showToast(`Please wait ${limit.remaining}s before trying again.`, 'error');
+        } else if (limit.errorType === 'limit') {
+            showToast(`Too many attempts (limit 5 per hour). Please try again in ${limit.remaining}s.`, 'error');
+        }
+        return;
+    }
+
+    const waNumber = getWhatsAppNumber();
+    const waMsg = encodeURIComponent('Hello, I want to inquire about your products.');
+    const url = `https://wa.me/${waNumber}?text=${waMsg}`;
+
     window.open(url, '_blank');
 }
 
