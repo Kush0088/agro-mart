@@ -170,15 +170,6 @@
     <script src="js/data.js"></script>
     <script src="js/global.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const waNumber = getWhatsAppNumber();
-            const footerWA = document.getElementById('footerWhatsApp');
-            const footerWABtn = document.getElementById('footerWhatsAppBtn');
-            if (footerWA) footerWA.href = `https://wa.me/${waNumber}?text=${encodeURIComponent('Hello, I want to inquire about your products.')}`;
-            if (footerWABtn) footerWABtn.href = `https://wa.me/${waNumber}?text=${encodeURIComponent('Hello, I want to inquire about your products.')}`;
-        });
-    </script>
 </body>
 
 </html>

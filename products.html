@@ -168,19 +168,6 @@
     <script src="js/data.js"></script>
     <script src="js/global.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const waNumber = getWhatsAppNumber();
-            const footerWA = document.getElementById('footerWhatsApp');
-            const footerWABtn = document.getElementById('footerWhatsAppBtn');
-            const floatWA = document.getElementById('whatsappFloat');
-            const waMsg = encodeURIComponent('Hello, I want to inquire about your products.');
-
-            if (footerWA) footerWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-            if (footerWABtn) footerWABtn.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-            if (floatWA) floatWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-        });
-    </script>
 </body>
 
 </html>

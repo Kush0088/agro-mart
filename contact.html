@@ -208,20 +208,6 @@
     <script src="js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Populate "Let's Connect" section
-            const phone = getWhatsAppNumber();
-            const email = getContactEmail();
-            const address = getContactAddress();
-
-            document.getElementById('displayPhone').textContent = `+${phone}`;
-            document.getElementById('displayEmail').textContent = email;
-            document.getElementById('displayAddress').textContent = address;
-
-            const waLink = `https://wa.me/${phone}?text=${encodeURIComponent('Hello, I want to inquire about your products.')}`;
-            const waConnect = document.getElementById('waConnect');
-            if (waConnect) {
-                waConnect.href = waLink;
-            }
 
             // Form Logic
             const form = document.getElementById('contactForm');

@@ -208,42 +208,6 @@
     <script src="js/data.js"></script>
     <script src="js/global.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        // Load hero banner image from admin settings
-        document.addEventListener('DOMContentLoaded', function () {
-            // Hero banner
-            const heroBannerBg = document.getElementById('heroBannerBg');
-            const heroBannerUrl = getHeroBannerImage();
-            if (heroBannerUrl && heroBannerBg) {
-                heroBannerBg.style.backgroundImage = `url('${heroBannerUrl}')`;
-                heroBannerBg.classList.add('has-image');
-            }
-
-            // About image
-            const aboutImg = document.getElementById('aboutImage');
-            const aboutWrapper = document.getElementById('aboutImageWrapper');
-            const aboutUrl = getAboutImage();
-            if (aboutUrl && aboutImg) {
-                aboutImg.src = aboutUrl;
-                if (aboutWrapper) aboutWrapper.style.display = 'block';
-            } else {
-                if (aboutWrapper) aboutWrapper.style.display = 'none';
-            }
-
-            // WhatsApp links
-            const waNumber = getWhatsAppNumber();
-            const heroWA = document.getElementById('heroWhatsApp');
-            const footerWA = document.getElementById('footerWhatsApp');
-            const footerWABtn = document.getElementById('footerWhatsAppBtn');
-            const floatWA = document.getElementById('whatsappFloat');
-            const waMsg = encodeURIComponent('Hello, I want to inquire about your products.');
-
-            if (heroWA) heroWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-            if (footerWA) footerWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-            if (footerWABtn) footerWABtn.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-            if (floatWA) floatWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
-        });
-    </script>
 </body>
 
 </html>

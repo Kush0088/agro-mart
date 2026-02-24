@@ -79,6 +79,25 @@ body {
     line-height: 1.5;
     min-height: 100vh;
     padding-top: var(--header-height);
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+body.loading-data {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Optional: Pulse animation for loading placeholders */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.loading-skeleton {
+    animation: pulse 1.5s infinite ease-in-out;
+    background-color: var(--gray-200);
 }
 
 a {

@@ -12,6 +12,9 @@ let toastElement;
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', async function () {
+    // Show a global loading overlay if possible (optional but good for speed/smoothness)
+    document.body.classList.add('loading-data');
+
     // Load data from API first (falls back to localStorage)
     await initData();
 
@@ -19,6 +22,40 @@ document.addEventListener('DOMContentLoaded', async function () {
     initEvents();
     loadCategories();
     updateCartCount();
+
+    // Centralized page-specific initialization
+    initializePageSpecifics();
+
+    // Start live data refresh (every 30s)
+    startDataRefresh();
+
+    document.body.classList.remove('loading-data');
+});
+
+// New Function for Page-Specific elements (replacing inline scripts)
+function initializePageSpecifics() {
+    // Home Page Hero Banner
+    const heroBannerBg = document.getElementById('heroBannerBg');
+    if (heroBannerBg) {
+        const heroBannerUrl = getHeroBannerImage();
+        if (heroBannerUrl) {
+            heroBannerBg.style.backgroundImage = `url('${heroBannerUrl}')`;
+            heroBannerBg.classList.add('has-image');
+        }
+    }
+
+    // Home Page About Image
+    const aboutImg = document.getElementById('aboutImage');
+    const aboutWrapper = document.getElementById('aboutImageWrapper');
+    if (aboutImg) {
+        const aboutUrl = getAboutImage();
+        if (aboutUrl) {
+            aboutImg.src = aboutUrl;
+            if (aboutWrapper) aboutWrapper.style.display = 'block';
+        } else {
+            if (aboutWrapper) aboutWrapper.style.display = 'none';
+        }
+    }
 
     // Products page
     if (document.querySelector('.products-grid')) {
@@ -31,6 +68,42 @@ document.addEventListener('DOMContentLoaded', async function () {
         loadCartPage();
     }
 
+    // Product Detail Page
+    const detailContainer = document.getElementById('productDetailContainer');
+    if (detailContainer) {
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get('id');
+        if (productId) {
+            loadProductDetails(productId);
+        }
+    }
+
+    // Contact Page
+    const displayPhone = document.getElementById('displayPhone');
+    if (displayPhone) {
+        const phone = getWhatsAppNumber();
+        const email = getContactEmail();
+        const address = getContactAddress();
+
+        displayPhone.textContent = `+${phone}`;
+        const displayEmail = document.getElementById('displayEmail');
+        if (displayEmail) displayEmail.textContent = email;
+        const displayAddress = document.getElementById('displayAddress');
+        if (displayAddress) displayAddress.textContent = address;
+
+        const waConnect = document.getElementById('waConnect');
+        if (waConnect) {
+            waConnect.href = `https://wa.me/${phone}?text=${encodeURIComponent('Hello, I want to inquire about your products.')}`;
+        }
+
+        // Security: Set page load time if form exists
+        const loadTimeInput = document.getElementById('pageLoadTime');
+        if (loadTimeInput) loadTimeInput.value = Date.now();
+    }
+
+    // WhatsApp links update
+    updateAllWhatsAppLinks();
+
     // Check for search parameter
     const params = new URLSearchParams(window.location.search);
     const searchQuery = params.get('search');
@@ -41,10 +114,23 @@ document.addEventListener('DOMContentLoaded', async function () {
             performSearch(searchQuery);
         }
     }
+}
 
-    // Start live data refresh (every 30s)
-    startDataRefresh();
-});
+function updateAllWhatsAppLinks() {
+    const waNumber = getWhatsAppNumber();
+    const waMsg = encodeURIComponent('Hello, I want to inquire about your products.');
+
+    // Find all links that should go to WhatsApp
+    const heroWA = document.getElementById('heroWhatsApp');
+    const footerWA = document.getElementById('footerWhatsApp');
+    const footerWABtn = document.getElementById('footerWhatsAppBtn');
+    const floatWA = document.getElementById('whatsappFloat');
+
+    if (heroWA) heroWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
+    if (footerWA) footerWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
+    if (footerWABtn) footerWABtn.href = `https://wa.me/${waNumber}?text=${waMsg}`;
+    if (floatWA) floatWA.href = `https://wa.me/${waNumber}?text=${waMsg}`;
+}
 
 // Initialize element references
 function initElements() {
@@ -813,7 +899,34 @@ function handleClearCart() {
     }
 }
 
-function handleWhatsAppOrder() {
+async function handleWhatsAppOrder() {
+    // Show loading state on button if possible
+    const orderBtn = document.getElementById('orderWhatsAppBtn');
+    if (orderBtn) {
+        const originalText = orderBtn.innerHTML;
+        orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing Prices...';
+        orderBtn.disabled = true;
+
+        try {
+            // Auto-refresh data before placing order to ensure latest values
+            // We clear the load promise to force a new fetch
+            window._forceDataRefresh = true;
+            // In data.js we might need a way to force refresh.
+            // For now, let's assume initData re-fetches if we call it again and it's not currently loading.
+            // Actually, initData caches the promise.
+            // Let's call a new direct check or force clear cache.
+            await fetch(API_BASE + '/data')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.products) saveData(data);
+                })
+                .catch(e => console.warn('Failed to refresh data before order', e));
+        } finally {
+            orderBtn.innerHTML = originalText;
+            orderBtn.disabled = false;
+        }
+    }
+
     const items = getCartItems();
 
     if (!items.length) {

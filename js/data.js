@@ -129,10 +129,14 @@ async function initData() {
             _dataLoaded = true;
             // Also save to localStorage as offline cache
             saveLocalData(_cachedData);
+
+            // Dispatch global event for UI updates
+            document.dispatchEvent(new CustomEvent('dataready', { detail: _cachedData }));
         } catch (err) {
             console.warn('API not available, using local data:', err.message);
             _cachedData = getLocalData();
             _dataLoaded = true;
+            document.dispatchEvent(new CustomEvent('dataready', { detail: _cachedData }));
         }
     })();
 
