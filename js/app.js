@@ -3,6 +3,18 @@
    Handles all frontend functionality
    ============================================ */
 
+// ===== SECURITY: HTML Escaping Utility =====
+// Prevents XSS by escaping all user-controlled data before injecting into innerHTML
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // DOM Elements
 let menuBtn, sideMenu, sideMenuOverlay, closeMenuBtn;
 let searchBtn, searchBox, searchInput, searchClose;
@@ -265,8 +277,8 @@ function loadCategories() {
     `;
 
     categories.forEach(cat => {
-        html += `<li><button data-category="${cat.id}">
-            <i class="${cat.icon}"></i> ${cat.name}
+        html += `<li><button data-category="${escapeHtml(cat.id)}">
+            <i class="${escapeHtml(cat.icon)}"></i> ${escapeHtml(cat.name)}
         </button></li>`;
     });
 
@@ -304,8 +316,8 @@ function loadCategories() {
         `;
         categories.forEach(cat => {
             filterHtml += `
-                <button class="filter-btn" data-filter="${cat.id}">
-                    <i class="${cat.icon}"></i> ${cat.name}
+                <button class="filter-btn" data-filter="${escapeHtml(cat.id)}">
+                    <i class="${escapeHtml(cat.icon)}"></i> ${escapeHtml(cat.name)}
                 </button>
             `;
         });
@@ -456,20 +468,20 @@ function createProductCard(product) {
     return `
         <div class="product-card" data-product-id="${product.id}">
             <div class="product-image">
-                <img src="${product.image}" alt="${product.name}" loading="lazy">
-                ${displayDiscount > 0 ? `<span class="discount-badge">${displayDiscount}% OFF</span>` : ''}
+                <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy">
+                ${displayDiscount > 0 ? `<span class="discount-badge">${escapeHtml(String(displayDiscount))}% OFF</span>` : ''}
                 ${product.bestSelling ? '<span class="best-selling-badge">BEST</span>' : ''}
             </div>
             <div class="product-info">
-                <h3 class="product-name">${product.name}</h3>
+                <h3 class="product-name">${escapeHtml(product.name)}</h3>
                 <div class="product-rating">
                     <span class="stars">${stars}</span>
-                    <span class="rating-count">(${product.reviewCount})</span>
+                    <span class="rating-count">(${escapeHtml(String(product.reviewCount))})</span>
                 </div>
                 <div class="product-pricing">
-                    <span class="offer-price">₹${displayPrice}</span>
+                    <span class="offer-price">₹${escapeHtml(String(displayPrice))}</span>
                     ${displayOrigPrice > displayPrice ?
-            `<span class="original-price">₹${displayOrigPrice}</span>` : ''}
+            `<span class="original-price">₹${escapeHtml(String(displayOrigPrice))}</span>` : ''}
                 </div>
                 ${actionButton}
             </div>
@@ -547,7 +559,7 @@ function openProductDetails(productId) {
 
     // Technical Details
     const techRows = Object.entries(product.technicalDetails || {})
-        .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+        .map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('');
 
     // Variants HTML
     let variantsHtml = '';
@@ -558,7 +570,7 @@ function openProductDetails(productId) {
                 ${product.variants.map((v, idx) => `
                     <button class="variant-btn ${idx === 0 ? 'active' : ''}" 
                         onclick="selectVariant(${idx})">
-                        ${v.weight}
+                        ${escapeHtml(v.weight)}
                     </button>
                 `).join('')}
             </div>
@@ -566,6 +578,10 @@ function openProductDetails(productId) {
         // Set initial variant
         currentVariant = product.variants[0];
     }
+
+    // Sanitize bulkOrderNumber to digits only before using in URL
+    const safeBulkNumber = (product.bulkOrderNumber || '').replace(/\D/g, '') || getWhatsAppNumber().replace(/\D/g, '');
+    const safeWaNumber = getWhatsAppNumber().replace(/\D/g, '');
 
     modal.innerHTML = `
         <div class="product-detail-content">
@@ -577,12 +593,12 @@ function openProductDetails(productId) {
                 <!-- Gallery -->
                 <div class="product-gallery">
                     <div class="main-image-container">
-                        <img id="detailMainImage" src="${allImages[0]}" alt="${product.name}">
+                        <img id="detailMainImage" src="${escapeHtml(allImages[0])}" alt="${escapeHtml(product.name)}">
                     </div>
                     <div class="thumbnail-list">
                         ${allImages.map((img, idx) => `
-                            <div class="thumbnail ${idx === 0 ? 'active' : ''}" onclick="updateMainImage('${img}', this)">
-                                <img src="${img}" alt="Thumb">
+                            <div class="thumbnail ${idx === 0 ? 'active' : ''}" onclick="updateMainImage('${escapeHtml(img)}', this)">
+                                <img src="${escapeHtml(img)}" alt="Thumb">
                             </div>
                         `).join('')}
                     </div>
@@ -590,19 +606,19 @@ function openProductDetails(productId) {
 
                 <!-- Info -->
                 <div class="product-detail-info">
-                    <h2 class="detail-title">${product.name}</h2>
+                    <h2 class="detail-title">${escapeHtml(product.name)}</h2>
                     
                     <div class="detail-pricing">
-                        <span class="offer-price" id="detailOfferPrice">₹${currentVariant ? currentVariant.price : product.offerPrice}</span>
+                        <span class="offer-price" id="detailOfferPrice">₹${escapeHtml(String(currentVariant ? currentVariant.price : product.offerPrice))}</span>
                         ${(currentVariant ? currentVariant.originalPrice : product.originalPrice) > (currentVariant ? currentVariant.price : product.offerPrice) ?
-            `<span class="original-price" id="detailOriginalPrice">₹${currentVariant ? currentVariant.originalPrice : product.originalPrice}</span>` : ''}
+            `<span class="original-price" id="detailOriginalPrice">₹${escapeHtml(String(currentVariant ? currentVariant.originalPrice : product.originalPrice))}</span>` : ''}
                     </div>
 
                     ${variantsHtml}
 
                     <div class="detail-description">
                         <h3>Product Description</h3>
-                        <p>${product.description || 'No description available.'}</p>
+                        <p>${escapeHtml(product.description || 'No description available.')}</p>
                     </div>
 
                     ${techRows ? `
@@ -628,7 +644,7 @@ function openProductDetails(productId) {
                         <div class="shipping-icon"><i class="fas fa-truck"></i></div>
                         <div class="shipping-text">Shipping Through Transport</div>
                         <div class="shipping-subtext">Standard transportation charge extra</div>
-                        <div class="shipping-subtext">For bulk quantity: <a href="https://wa.me/${product.bulkOrderNumber || getWhatsAppNumber()}?text=${encodeURIComponent(`Hello, I want to order ${product.name} in bulk.`)}" class="whatsapp-link" target="_blank">${product.bulkOrderNumber || getWhatsAppNumber()}</a></div>
+                        <div class="shipping-subtext">For bulk quantity: <a href="https://wa.me/${safeBulkNumber}?text=${encodeURIComponent('Hello, I want to order ' + (product.name || '') + ' in bulk.')}" class="whatsapp-link" target="_blank">${escapeHtml(safeBulkNumber)}</a></div>
                     </div>
                 </div>
             </div>
@@ -820,18 +836,18 @@ function loadCartPage() {
         container.innerHTML = items.map(item => `
             <div class="cart-item" data-product-id="${item.id}">
                 <a href="product-detail.html?id=${item.id}" class="cart-item-image">
-                    <img src="${item.image}" alt="${item.name}">
+                    <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
                 </a>
                 <div class="cart-item-details">
                     <a href="product-detail.html?id=${item.id}">
-                        <h3 class="cart-item-name">${item.name}</h3>
+                        <h3 class="cart-item-name">${escapeHtml(item.name)}</h3>
                     </a>
-                    <p class="cart-item-price">₹${item.offerPrice}</p>
+                    <p class="cart-item-price">₹${escapeHtml(String(item.offerPrice))}</p>
                     <div class="cart-item-quantity">
                         <button class="quantity-btn minus" data-product-id="${item.id}" data-variant-index="${item.variantIndex !== undefined ? item.variantIndex : ''}">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <span class="quantity-value">${item.quantity}</span>
+                        <span class="quantity-value">${escapeHtml(String(item.quantity))}</span>
                         <button class="quantity-btn plus" data-product-id="${item.id}" data-variant-index="${item.variantIndex !== undefined ? item.variantIndex : ''}">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -1040,7 +1056,7 @@ function loadProductDetails(productId) {
 
     // Technical Details
     const techRows = Object.entries(product.technicalDetails || {})
-        .map(([k, v]) => `<tr><td class="tech-key">${k}</td><td class="tech-value">${v}</td></tr>`).join('');
+        .map(([k, v]) => `<tr><td class="tech-key">${escapeHtml(k)}</td><td class="tech-value">${escapeHtml(v)}</td></tr>`).join('');
 
     // Variants HTML
     let variantsHtml = '';
@@ -1052,8 +1068,8 @@ function loadProductDetails(productId) {
                     ${product.variants.map((v, idx) => `
                         <button class="variant-btn ${idx === 0 ? 'active' : ''}" 
                             onclick="selectVariant(${idx})">
-                            <span class="variant-weight">${v.weight}</span>
-                            <span class="variant-price-sm">₹${v.price}</span>
+                            <span class="variant-weight">${escapeHtml(v.weight)}</span>
+                            <span class="variant-price-sm">₹${escapeHtml(String(v.price))}</span>
                         </button>
                     `).join('')}
                 </div>
@@ -1084,18 +1100,18 @@ function loadProductDetails(productId) {
 
         <!-- Info -->
         <div class="product-main-info">
-            <h1 class="detail-product-name">${product.name}</h1>
+            <h1 class="detail-product-name">${escapeHtml(product.name)}</h1>
             
             <div class="product-rating" style="margin-bottom: 12px;">
                 <span class="stars" style="font-size: 0.9rem;">
                     ${getStarRatingHtml(product.rating)}
                 </span>
-                <span class="rating-count" style="font-size: 0.8rem;">(${product.reviewCount} reviews)</span>
+                <span class="rating-count" style="font-size: 0.8rem;">(${escapeHtml(String(product.reviewCount))} reviews)</span>
             </div>
 
             <div class="detail-pricing">
-                <span class="detail-offer-price" id="detailOfferPrice">₹${initialPrice}</span>
-                <span class="detail-original-price" id="detailOriginalPrice" style="display: ${initialOrigPrice > initialPrice ? 'inline' : 'none'}">₹${initialOrigPrice}</span>
+                <span class="detail-offer-price" id="detailOfferPrice">₹${escapeHtml(String(initialPrice))}</span>
+                <span class="detail-original-price" id="detailOriginalPrice" style="display: ${initialOrigPrice > initialPrice ? 'inline' : 'none'}">₹${escapeHtml(String(initialOrigPrice))}</span>
             </div>
 
             ${variantsHtml}
@@ -1105,7 +1121,7 @@ function loadProductDetails(productId) {
                  <div class="shipping-icon"><i class="fas fa-truck"></i></div>
                  <div class="shipping-text">Shipping Through Transport</div>
                  <div class="shipping-subtext">Standard transportation charge extra</div>
-                 <div class="shipping-subtext">For bulk quantity: <a href="https://wa.me/${product.bulkOrderNumber || getWhatsAppNumber()}?text=${encodeURIComponent(`Hello, I want to order ${product.name} in bulk.`)}" class="whatsapp-link" target="_blank">${product.bulkOrderNumber || getWhatsAppNumber()}</a></div>
+                 <div class="shipping-subtext">For bulk quantity: <a href="https://wa.me/${(product.bulkOrderNumber || getWhatsAppNumber()).replace(/\D/g, '')}?text=${encodeURIComponent('Hello, I want to order ' + (product.name || '') + ' in bulk.')}" class="whatsapp-link" target="_blank">${escapeHtml((product.bulkOrderNumber || getWhatsAppNumber()).replace(/\D/g, ''))}</a></div>
             </div>
 
             <!-- Sticky Actions on Mobile, Normal on Desktop -->
@@ -1115,7 +1131,7 @@ function loadProductDetails(productId) {
 
             <div class="product-description-section">
                 <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 10px;">Product Description</h3>
-                <p class="description-text">${product.description || 'No description available.'}</p>
+                <p class="description-text">${escapeHtml(product.description || 'No description available.')}</p>
             </div>
 
             ${techRows ? `

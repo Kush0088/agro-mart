@@ -6,6 +6,8 @@
 
 require('dotenv').config();
 
+const crypto = require('crypto');
+
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -23,8 +25,57 @@ const sheetsService = require('./services/googleSheets');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'agherakush';
 const ADMIN_PATH = process.env.ADMIN_PATH || 'aghera-adminss';
+
+// ===== SECURITY: Require ADMIN_PASSWORD in env — never fall back to a hardcoded value =====
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD || ADMIN_PASSWORD.trim() === '') {
+    console.error('❌ FATAL: ADMIN_PASSWORD environment variable is not set. Server will not start.');
+    process.exit(1);
+}
+
+// ===== SESSION MANAGEMENT (Stateless Signed Tokens for Vercel) =====
+// We use HMAC to sign tokens so we don't need a database/memory store
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function signToken(data) {
+    const payload = JSON.stringify(data);
+    const signature = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+    return Buffer.from(payload).toString('base64') + '.' + signature;
+}
+
+function verifyToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+
+    const payload = Buffer.from(parts[0], 'base64').toString();
+    const signature = parts[1];
+    const expectedSignature = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+
+    if (signature !== expectedSignature) return null;
+
+    try {
+        const data = JSON.parse(payload);
+        if (Date.now() - data.createdAt > SESSION_TTL_MS) return null;
+        return data;
+    } catch (e) {
+        return null;
+    }
+}
+
+function createSession() {
+    return signToken({ createdAt: Date.now(), nonce: crypto.randomBytes(16).toString('hex') });
+}
+
+function isValidSession(token) {
+    return !!verifyToken(token);
+}
+
+function deleteSession(token) {
+    // Stateless tokens can't be deleted server-side easily without a blacklist
+    // clearCookie on the client is sufficient for most use cases here
+}
 
 // Trust proxy for rate limiting (important for Heroku/Nginx/etc)
 if (NODE_ENV === 'production') {
@@ -33,11 +84,11 @@ if (NODE_ENV === 'production') {
 
 // ===== BODY PARSING & COOKIES =====
 // Limit payload sizes to prevent DoS attacks
-app.use(express.json({ 
+app.use(express.json({
     limit: NODE_ENV === 'production' ? '5mb' : '10mb' // Stricter limit in production
 }));
-app.use(express.urlencoded({ 
-    extended: true, 
+app.use(express.urlencoded({
+    extended: true,
     limit: NODE_ENV === 'production' ? '5mb' : '10mb'
 }));
 app.use(cookieParser());
@@ -169,10 +220,18 @@ app.use('/api/admin/login', loginLimiter);
 
 // ===== AUTH MIDDLEWARE =====
 function checkAdminAuth(req, res, next) {
-    if (req.cookies.admin_token === ADMIN_PASSWORD) {
+    if (isValidSession(req.cookies.admin_token)) {
         next();
     } else {
         res.redirect('/login');
+    }
+}
+
+function checkAdminAuthAPI(req, res, next) {
+    if (isValidSession(req.cookies.admin_token)) {
+        next();
+    } else {
+        res.status(401).json({ error: 'Unauthorized' });
     }
 }
 
@@ -200,28 +259,46 @@ app.get('/login', (req, res) => {
 // Admin Login API
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    
+
     // Trim and validate input
     if (!password || typeof password !== 'string' || password.trim() === '') {
         return res.status(400).json({ error: 'Password is required' });
     }
-    
+
     // Use constant-time comparison to prevent timing attacks
-    const isMatch = password === ADMIN_PASSWORD;
-    
+    let isMatch = false;
+    try {
+        const inputBuf = Buffer.from(password);
+        const storedBuf = Buffer.from(ADMIN_PASSWORD);
+        // Buffers must be the same length for timingSafeEqual
+        if (inputBuf.length === storedBuf.length) {
+            isMatch = crypto.timingSafeEqual(inputBuf, storedBuf);
+        }
+    } catch {
+        isMatch = false;
+    }
+
     if (isMatch) {
-        // Create a secure session token instead of using password
-        res.cookie('admin_token', ADMIN_PASSWORD, {
+        // Create a random secure session token — NEVER store the password in a cookie
+        const sessionToken = createSession();
+        res.cookie('admin_token', sessionToken, {
             httpOnly: true,
             secure: NODE_ENV === 'production',
             sameSite: 'Strict',
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            maxAge: SESSION_TTL_MS
         });
         res.json({ success: true, redirect: `/${ADMIN_PATH}` });
     } else {
         // Generic message to prevent username enumeration
         res.status(401).json({ error: 'Invalid credentials' });
     }
+});
+
+// Admin Logout API
+app.post('/api/admin/logout', (req, res) => {
+    deleteSession(req.cookies.admin_token);
+    res.clearCookie('admin_token');
+    res.json({ success: true });
 });
 
 // Custom Admin Path
@@ -246,8 +323,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'home.html'));
 });
 
-// ===== HEALTH CHECK =====
-app.get('/health', (req, res) => {
+// ===== HEALTH CHECK (admin only) =====
+app.get('/health', checkAdminAuthAPI, (req, res) => {
     res.json({
         status: 'ok',
         uptime: process.uptime(),
@@ -265,12 +342,12 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
     console.error(`Error [${statusCode}]:`, err.message);
-    
+
     // Don't expose internal error details in production
-    const response = NODE_ENV === 'production' 
+    const response = NODE_ENV === 'production'
         ? { error: 'Internal server error' }
         : { error: err.message, details: err.stack };
-    
+
     res.status(statusCode).json(response);
 });
 

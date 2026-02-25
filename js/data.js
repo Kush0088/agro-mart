@@ -439,15 +439,7 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     };
 
     if (body) {
-        // Protect sensitive info in logs
-        const logBody = { ...body };
-        if (logBody.privateKey) logBody.privateKey = '***REDACTED***';
-        if (logBody.password) logBody.password = '***REDACTED***';
-
-        console.log(`🌐 API Request: ${method} ${url}`, logBody);
         options.body = JSON.stringify(body);
-    } else {
-        console.log(`🌐 API Request: ${method} ${url}`);
     }
 
     try {

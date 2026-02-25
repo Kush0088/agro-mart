@@ -32,6 +32,10 @@
       "destination": "/server.js"
     },
     {
+      "source": "/api/admin/logout",
+      "destination": "/server.js"
+    },
+    {
       "source": "/aghera-adminss",
       "destination": "/server.js"
     },

@@ -5,9 +5,11 @@
 
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const sheetsService = require('../services/googleSheets');
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'agherakush088';
+// ADMIN_PASSWORD is used for write operations (backward compatibility for some clients)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // Middleware: Validate admin password for write operations
 function requireAdmin(req, res, next) {
@@ -18,11 +20,36 @@ function requireAdmin(req, res, next) {
         return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (password !== ADMIN_PASSWORD) {
-        // Generic message to prevent enumeration
+    // Constant-time comparison to prevent timing attacks
+    let isMatch = false;
+    try {
+        const inputBuf = Buffer.from(password);
+        const storedBuf = Buffer.from(ADMIN_PASSWORD);
+        if (inputBuf.length === storedBuf.length) {
+            isMatch = crypto.timingSafeEqual(inputBuf, storedBuf);
+        }
+    } catch {
+        isMatch = false;
+    }
+
+    if (!isMatch) {
         return res.status(401).json({ error: 'Invalid credentials' });
     }
     next();
+}
+
+// Helper: only allow http/https URLs (blocks javascript: and data: URLs)
+function validateUrl(url) {
+    if (!url || url.trim() === '') return '';
+    try {
+        const parsed = new URL(url.trim());
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return url.trim();
+        }
+    } catch {
+        // Not a valid URL
+    }
+    return ''; // Reject invalid or dangerous URLs
 }
 
 // Middleware: Validate JSON structure
@@ -211,13 +238,13 @@ router.post('/settings', requireAdmin, validateJSON, async (req, res, next) => {
             return res.status(400).json({ error: 'Invalid settings data format' });
         }
 
-        // Sanitize settings
+        // Sanitize settings — only allow safe http/https image URLs
         const sanitizedSettings = {};
         const allowedKeys = ['bannerImage', 'heroBannerImage', 'aboutImage'];
 
         Object.keys(settings).forEach(key => {
             if (allowedKeys.includes(key)) {
-                sanitizedSettings[key] = (settings[key] || '').toString().slice(0, 5000);
+                sanitizedSettings[key] = validateUrl((settings[key] || '').toString().slice(0, 5000));
             }
         });
 
@@ -262,12 +289,12 @@ router.post('/contacts', requireAdmin, validateJSON, async (req, res, next) => {
             sanitizedContacts.contactAddress = (contacts.contactAddress || '').toString().slice(0, 500);
         }
 
-        // Handle social links
+        // Handle social links — validate as http/https URLs only
         if (contacts.socialLinks && typeof contacts.socialLinks === 'object') {
-            sanitizedContacts.facebookLink = (contacts.socialLinks.facebook || '').toString().slice(0, 500);
-            sanitizedContacts.instagramLink = (contacts.socialLinks.instagram || '').toString().slice(0, 500);
-            sanitizedContacts.twitterLink = (contacts.socialLinks.twitter || '').toString().slice(0, 500);
-            sanitizedContacts.linkedinLink = (contacts.socialLinks.linkedin || '').toString().slice(0, 500);
+            sanitizedContacts.facebookLink = validateUrl((contacts.socialLinks.facebook || '').toString().slice(0, 500));
+            sanitizedContacts.instagramLink = validateUrl((contacts.socialLinks.instagram || '').toString().slice(0, 500));
+            sanitizedContacts.twitterLink = validateUrl((contacts.socialLinks.twitter || '').toString().slice(0, 500));
+            sanitizedContacts.linkedinLink = validateUrl((contacts.socialLinks.linkedin || '').toString().slice(0, 500));
         }
 
         if (Object.keys(sanitizedContacts).length === 0) {

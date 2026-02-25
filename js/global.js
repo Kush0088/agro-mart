@@ -3,6 +3,27 @@
    Handles dynamic contact details and common elements
    ============================================ */
 
+// ===== SECURITY: HTML Escaping Utility =====
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Validate that a URL uses http or https protocol (blocks javascript: attacks)
+function safeUrl(url) {
+    if (!url || typeof url !== 'string' || url.trim() === '') return null;
+    try {
+        const parsed = new URL(url.trim());
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return url.trim();
+    } catch { }
+    return null;
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     // Wait for data from API
     await initData();
@@ -10,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 function initGlobalContactDetails() {
-    const phone = getWhatsAppNumber();
+    const phone = (getWhatsAppNumber() || '').replace(/\D/g, '');
     const email = getContactEmail();
     const address = getContactAddress();
     const social = getSocialLinks();
@@ -21,15 +42,20 @@ function initGlobalContactDetails() {
 
     const footerContactList = document.querySelector('.footer-contact');
     if (footerContactList) {
+        const fbUrl = safeUrl(social.facebook);
+        const igUrl = safeUrl(social.instagram);
+        const twUrl = safeUrl(social.twitter);
+        const liUrl = safeUrl(social.linkedin);
+
         footerContactList.innerHTML = `
-            <li><i class="fas fa-phone"></i> <a href="tel:+${phone}">+${formatPhoneNumber(phone)}</a></li>
-            <li><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></li>
-            <li><i class="fas fa-map-marker-alt"></i> ${address}</li>
+            <li><i class="fas fa-phone"></i> <a href="tel:+${escapeHtml(phone)}">+${escapeHtml(formatPhoneNumber(phone))}</a></li>
+            <li><i class="fas fa-envelope"></i> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></li>
+            <li><i class="fas fa-map-marker-alt"></i> ${escapeHtml(address)}</li>
              <li class="footer-social">
-                ${social.facebook ? `<a href="${social.facebook}" target="_blank"><i class="fab fa-facebook-f"></i></a>` : ''}
-                ${social.instagram ? `<a href="${social.instagram}" target="_blank"><i class="fab fa-instagram"></i></a>` : ''}
-                ${social.twitter ? `<a href="${social.twitter}" target="_blank"><i class="fab fa-twitter"></i></a>` : ''}
-                ${social.linkedin ? `<a href="${social.linkedin}" target="_blank"><i class="fab fa-linkedin-in"></i></a>` : ''}
+                ${fbUrl ? `<a href="${escapeHtml(fbUrl)}" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>` : ''}
+                ${igUrl ? `<a href="${escapeHtml(igUrl)}" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>` : ''}
+                ${twUrl ? `<a href="${escapeHtml(twUrl)}" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>` : ''}
+                ${liUrl ? `<a href="${escapeHtml(liUrl)}" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a>` : ''}
             </li>
         `;
     }

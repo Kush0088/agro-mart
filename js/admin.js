@@ -3,6 +3,17 @@
    Manage products, categories, and settings
    ============================================ */
 
+// ===== SECURITY: HTML Escaping Utility =====
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 let adminPassword = '';
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -17,7 +28,27 @@ document.addEventListener('DOMContentLoaded', async function () {
     loadProductsList();
     loadContactSettings();
     initAdminEvents();
+    initLogout();
 });
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/api/admin/logout', { method: 'POST' });
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    }
+                } catch (err) {
+                    console.error('Logout error:', err);
+                    showToast('Logout failed', 'error');
+                }
+            }
+        });
+    }
+}
 
 function validateAdminAction() {
     if (adminPassword) return true;
@@ -203,9 +234,9 @@ function loadCategoryList() {
     const categories = getCategories();
     container.innerHTML = categories.map(cat => `
         <div class="category-tag">
-            <i class="${cat.icon}"></i>
-            <span>${cat.name}</span>
-            <i class="fas fa-times delete-category" data-id="${cat.id}"></i>
+            <i class="${escapeHtml(cat.icon)}"></i>
+            <span>${escapeHtml(cat.name)}</span>
+            <i class="fas fa-times delete-category" data-id="${escapeHtml(cat.id)}"></i>
         </div>
     `).join('');
 
@@ -222,7 +253,7 @@ function loadCategoryDropdown() {
 
     const categories = getCategories();
     select.innerHTML = '<option value="">Select Category</option>' +
-        categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        categories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
 }
 
 async function addCategory() {
@@ -304,17 +335,17 @@ function loadProductsList(searchQuery = '') {
 
     if (!products.length) {
         container.innerHTML = searchQuery ?
-            `<p>No products matching "${searchQuery}"</p>` :
+            `<p>No products matching "${escapeHtml(searchQuery)}"</p>` :
             '<p>No products. Add your first product above.</p>';
         return;
     }
 
     container.innerHTML = products.map(p => `
         <div class="admin-product-card">
-            <img src="${p.image}" alt="${p.name}">
+            <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">
             <div class="admin-product-info">
-                <h4>${p.name}</h4>
-                <p>₹${p.offerPrice} | ${p.category || 'No Category'}</p>
+                <h4>${escapeHtml(p.name)}</h4>
+                <p>₹${escapeHtml(String(p.offerPrice))} | ${escapeHtml(p.category || 'No Category')}</p>
             </div>
             <div class="admin-product-actions">
                 <button class="btn-edit" data-id="${p.id}"><i class="fas fa-edit"></i> Edit</button>
@@ -503,9 +534,9 @@ function addVariantRow(variant = null) {
     if (variant && variant.isMain) row.classList.add('is-main');
 
     row.innerHTML = `
-        <input type="text" placeholder="Weight (e.g. 1kg)" value="${variant ? variant.weight : ''}" class="v-weight">
-        <input type="number" placeholder="Offer Price" value="${variant ? variant.price : ''}" class="v-price">
-        <input type="number" placeholder="Orig. Price" value="${variant ? (variant.originalPrice || '') : ''}" class="v-orig">
+        <input type="text" placeholder="Weight (e.g. 1kg)" value="${escapeHtml(variant ? variant.weight : '')}" class="v-weight">
+        <input type="number" placeholder="Offer Price" value="${escapeHtml(String(variant ? variant.price : ''))}" class="v-price">
+        <input type="number" placeholder="Orig. Price" value="${escapeHtml(String(variant ? (variant.originalPrice || '') : ''))}" class="v-orig">
         <div class="row-actions">
             <button type="button" class="btn-select-row ${variant && variant.isMain ? 'active' : ''}" title="Set as main variant"><i class="fas fa-check"></i></button>
             <button type="button" class="btn-delete-row" title="Remove"><i class="fas fa-trash"></i></button>
