@@ -7,17 +7,17 @@ const express = require('express');
 const router = express.Router();
 const sheetsService = require('../services/googleSheets');
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'agherakush';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'agherakush088';
 
 // Middleware: Validate admin password for write operations
 function requireAdmin(req, res, next) {
     const password = req.body.password || req.headers['x-admin-password'];
-    
+
     // Validate input
     if (!password || typeof password !== 'string') {
         return res.status(401).json({ error: 'Authentication required' });
     }
-    
+
     if (password !== ADMIN_PASSWORD) {
         // Generic message to prevent enumeration
         return res.status(401).json({ error: 'Invalid credentials' });
@@ -102,16 +102,16 @@ router.get('/export', requireAdmin, async (req, res) => {
 router.post('/products', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const product = req.body.product;
-        
+
         // Validate required fields
         if (!product || typeof product !== 'object') {
             return res.status(400).json({ error: 'Invalid product data format' });
         }
-        
+
         if (!product.name || typeof product.name !== 'string' || product.name.trim() === '') {
             return res.status(400).json({ error: 'Product name is required' });
         }
-        
+
         // Sanitize product data
         const sanitizedProduct = {
             id: product.id ? parseInt(product.id) : undefined,
@@ -132,7 +132,7 @@ router.post('/products', requireAdmin, validateJSON, async (req, res, next) => {
             createdAt: product.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
-        
+
         const saved = await sheetsService.saveProduct(sanitizedProduct);
         res.json({ success: true, product: saved });
     } catch (err) {
@@ -160,25 +160,25 @@ router.delete('/products/:id', requireAdmin, async (req, res, next) => {
 router.post('/categories', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const category = req.body.category;
-        
+
         if (!category || typeof category !== 'object') {
             return res.status(400).json({ error: 'Invalid category data format' });
         }
-        
+
         if (!category.id || typeof category.id !== 'string' || category.id.trim() === '') {
             return res.status(400).json({ error: 'Category ID is required' });
         }
-        
+
         if (!category.name || typeof category.name !== 'string' || category.name.trim() === '') {
             return res.status(400).json({ error: 'Category name is required' });
         }
-        
+
         const sanitizedCategory = {
             id: category.id.trim().slice(0, 100),
             name: category.name.trim().slice(0, 100),
             icon: (category.icon || 'fas fa-tag').toString().slice(0, 100)
         };
-        
+
         const saved = await sheetsService.saveCategory(sanitizedCategory);
         res.json({ success: true, category: saved });
     } catch (err) {
@@ -206,25 +206,25 @@ router.delete('/categories/:id', requireAdmin, async (req, res, next) => {
 router.post('/settings', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const settings = req.body.settings;
-        
+
         if (!settings || typeof settings !== 'object') {
             return res.status(400).json({ error: 'Invalid settings data format' });
         }
-        
+
         // Sanitize settings
         const sanitizedSettings = {};
         const allowedKeys = ['bannerImage', 'heroBannerImage', 'aboutImage'];
-        
+
         Object.keys(settings).forEach(key => {
             if (allowedKeys.includes(key)) {
                 sanitizedSettings[key] = (settings[key] || '').toString().slice(0, 5000);
             }
         });
-        
+
         if (Object.keys(sanitizedSettings).length === 0) {
             return res.status(400).json({ error: 'No valid settings provided' });
         }
-        
+
         await sheetsService.saveSettings(sanitizedSettings);
         res.json({ success: true });
     } catch (err) {
@@ -236,32 +236,32 @@ router.post('/settings', requireAdmin, validateJSON, async (req, res, next) => {
 router.post('/contacts', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const contacts = req.body.contacts;
-        
+
         if (!contacts || typeof contacts !== 'object') {
             return res.status(400).json({ error: 'Invalid contacts data format' });
         }
-        
+
         // Sanitize contacts
         const sanitizedContacts = {};
-        
+
         if (contacts.whatsappNumber) {
             const phone = (contacts.whatsappNumber || '').toString().replace(/\D/g, '').slice(0, 15);
             if (phone.length >= 10) {
                 sanitizedContacts.whatsappNumber = phone;
             }
         }
-        
+
         if (contacts.contactEmail) {
             const email = (contacts.contactEmail || '').toString().trim().slice(0, 255);
             if (email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                 sanitizedContacts.contactEmail = email;
             }
         }
-        
+
         if (contacts.contactAddress) {
             sanitizedContacts.contactAddress = (contacts.contactAddress || '').toString().slice(0, 500);
         }
-        
+
         // Handle social links
         if (contacts.socialLinks && typeof contacts.socialLinks === 'object') {
             sanitizedContacts.facebookLink = (contacts.socialLinks.facebook || '').toString().slice(0, 500);
@@ -269,11 +269,11 @@ router.post('/contacts', requireAdmin, validateJSON, async (req, res, next) => {
             sanitizedContacts.twitterLink = (contacts.socialLinks.twitter || '').toString().slice(0, 500);
             sanitizedContacts.linkedinLink = (contacts.socialLinks.linkedin || '').toString().slice(0, 500);
         }
-        
+
         if (Object.keys(sanitizedContacts).length === 0) {
             return res.status(400).json({ error: 'No valid contact data provided' });
         }
-        
+
         await sheetsService.saveSettings(sanitizedContacts);
         res.json({ success: true });
     } catch (err) {
@@ -287,25 +287,25 @@ router.post('/contacts', requireAdmin, validateJSON, async (req, res, next) => {
 router.post('/import', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const importData = req.body.data;
-        
+
         if (!importData || typeof importData !== 'object') {
             return res.status(400).json({ error: 'Invalid import data format' });
         }
-        
+
         // Validate that data has expected structure
         if (!Array.isArray(importData.products) && importData.products !== undefined) {
             return res.status(400).json({ error: 'Products must be an array' });
         }
-        
+
         if (!Array.isArray(importData.categories) && importData.categories !== undefined) {
             return res.status(400).json({ error: 'Categories must be an array' });
         }
-        
+
         // Set reasonable limits
         if (importData.products && importData.products.length > 10000) {
             return res.status(400).json({ error: 'Maximum 10000 products allowed' });
         }
-        
+
         await sheetsService.importAllData(importData);
         res.json({ success: true });
     } catch (err) {
@@ -325,7 +325,7 @@ router.get('/sheets-config', requireAdmin, async (req, res, next) => {
             serviceAccountEmail: config.serviceAccountEmail,
             isConnected: config.isConnected
         };
-        
+
         const connectionTest = await sheetsService.testConnection();
         res.json({ ...safeConfig, connectionStatus: connectionTest });
     } catch (err) {
@@ -343,17 +343,17 @@ router.post('/sheets-config', requireAdmin, validateJSON, async (req, res, next)
             return res.status(400).json({ error: 'Valid sheet ID is required' });
         }
 
-        const configUpdate = { 
+        const configUpdate = {
             sheetId: sheetId.trim().slice(0, 255)
         };
-        
+
         if (serviceAccountEmail && typeof serviceAccountEmail === 'string') {
             const email = serviceAccountEmail.trim().slice(0, 255);
             if (email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                 configUpdate.serviceAccountEmail = email;
             }
         }
-        
+
         if (privateKey && typeof privateKey === 'string' && privateKey.trim().length > 100) {
             configUpdate.privateKey = privateKey.trim().slice(0, 5000);
         }
@@ -414,25 +414,25 @@ router.post('/sheets-config/test', requireAdmin, validateJSON, async (req, res, 
 router.post('/seed', requireAdmin, validateJSON, async (req, res, next) => {
     try {
         const defaultData = req.body.data;
-        
+
         if (!defaultData || typeof defaultData !== 'object') {
             return res.status(400).json({ error: 'Seed data must be a valid object' });
         }
-        
+
         // Validate structure
         if (defaultData.products && !Array.isArray(defaultData.products)) {
             return res.status(400).json({ error: 'Products must be an array' });
         }
-        
+
         if (defaultData.categories && !Array.isArray(defaultData.categories)) {
             return res.status(400).json({ error: 'Categories must be an array' });
         }
-        
+
         // Set limits
         if (defaultData.products && defaultData.products.length > 10000) {
             return res.status(400).json({ error: 'Maximum 10000 products allowed' });
         }
-        
+
         await sheetsService.importAllData(defaultData);
         res.json({ success: true, message: 'Data seeded to Google Sheets' });
     } catch (err) {
